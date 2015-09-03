@@ -1,4 +1,6 @@
-# Spark at Scale - simulates a stream of movie ratings.  Data flows from akka -> kafka -> spark streaming -> cassandra
+# Spark at Scale
+ 
+This demo simulates a stream of movie ratings.  Data flows from akka -> kafka -> spark streaming -> cassandra
 
 ## Kafka Setup 
 
