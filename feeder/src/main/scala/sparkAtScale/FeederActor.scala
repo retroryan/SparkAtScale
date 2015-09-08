@@ -1,4 +1,4 @@
-package sparkAtScale 
+package sparkAtScale
 
 import akka.actor.{Props, Actor, ActorLogging}
 import org.apache.kafka.clients.producer.{ProducerRecord,Callback,RecordMetadata}
@@ -10,7 +10,9 @@ import scala.concurrent.duration._
  * This keeps the file handle open and just reads on line at fixed time ticks.
  * Not the most efficient implementation, but it is the easiest.
  */
-class FeederActor extends Actor with ActorLogging with FeederExtensionActor {
+class FeederActor(tickInterval:FiniteDuration) extends Actor with ActorLogging with FeederExtensionActor {
+
+  log.info(s"Starting feeder actor ${self.path}")
 
   import FeederActor.SendNextLine
 
@@ -18,7 +20,7 @@ class FeederActor extends Actor with ActorLogging with FeederExtensionActor {
 
   implicit val executionContext = context.system.dispatcher
 
-  val feederTick = context.system.scheduler.schedule(Duration.Zero, 100.millis, self, SendNextLine)
+  val feederTick = context.system.scheduler.schedule(Duration.Zero, tickInterval, self, SendNextLine)
 
   var dataIter:Iterator[String] = initData()
 
@@ -46,7 +48,7 @@ class FeederActor extends Actor with ActorLogging with FeederExtensionActor {
 }
 
 object FeederActor {
-	val props = Props[FeederActor]
+  def props(tickInterval:FiniteDuration) = Props(new FeederActor(tickInterval))
 	case object ShutDown
 	case object SendNextLine
 

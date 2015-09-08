@@ -1,0 +1,101 @@
+{
+  "metadata" : {
+    "name" : "BasicDataFramesExample",
+    "user_save_timestamp" : "1970-01-01T00:00:00.000Z",
+    "auto_save_timestamp" : "1970-01-01T00:00:00.000Z",
+    "language_info" : {
+      "name" : "scala",
+      "file_extension" : "scala",
+      "codemirror_mode" : "text/x-scala"
+    },
+    "trusted" : true,
+    "customLocalRepo" : "/home/automaton/.ivy2",
+    "customRepos" : null,
+    "customDeps" : [ "com.datastax.spark:spark-cassandra-connector_2.10:1.4.0-M3", "com.databricks:spark-csv_2.10:1.2.0", "- org.apache.spark % spark-core_2.10 % _", "- org.apache.hadoop % _ % _" ],
+    "customImports" : null,
+    "customSparkConf" : {
+      "spark.cassandra.connection.host" : "172.31.2.143",
+      "spark.master" : "spark://172.31.2.143:7077",
+      "spark.executor.cores" : "1",
+      "spark.executor.memory" : "512m",
+      "spark.cores.max" : "1",
+      "spark.eventLog.enabled" : "true",
+      "spark.eventLog.dir" : "logs/spark"
+    }
+  },
+  "cells" : [ {
+    "metadata" : { },
+    "cell_type" : "markdown",
+    "source" : "### Setup the SQL Context and necessary imports"
+  }, {
+    "metadata" : {
+      "trusted" : true,
+      "input_collapsed" : false,
+      "collapsed" : false
+    },
+    "cell_type" : "code",
+    "source" : "val sqlContext = new org.apache.spark.sql.SQLContext(sparkContext)\nimport sqlContext.implicits._\nimport org.apache.spark.sql.functions._",
+    "outputs" : [ {
+      "name" : "stdout",
+      "output_type" : "stream",
+      "text" : "sqlContext: org.apache.spark.sql.SQLContext = org.apache.spark.sql.SQLContext@6ff1f9e3\nimport sqlContext.implicits._\nimport org.apache.spark.sql.functions._\n"
+    }, {
+      "metadata" : { },
+      "data" : {
+        "text/html" : ""
+      },
+      "output_type" : "execute_result",
+      "execution_count" : 2
+    } ]
+  }, {
+    "metadata" : {
+      "trusted" : true,
+      "input_collapsed" : false,
+      "collapsed" : false
+    },
+    "cell_type" : "code",
+    "source" : "import org.slf4j.impl.Log4jLoggerAdapter\n\nval df = sqlContext.read.json(\"file:/home/automaton/notebook_setup/people.json\")\n\n// Displays the content of the DataFrame to stdout\ndf.show()\n\n",
+    "outputs" : [ {
+      "name" : "stdout",
+      "output_type" : "stream",
+      "text" : "+----+-------+\n| age|   name|\n+----+-------+\n|null|Michael|\n|  30|   Andy|\n|  19| Justin|\n+----+-------+\n\nimport org.slf4j.impl.Log4jLoggerAdapter\ndf: org.apache.spark.sql.DataFrame = [age: bigint, name: string]\n"
+    }, {
+      "metadata" : { },
+      "data" : {
+        "text/html" : ""
+      },
+      "output_type" : "execute_result",
+      "execution_count" : 4
+    } ]
+  }, {
+    "metadata" : {
+      "trusted" : true,
+      "input_collapsed" : false,
+      "collapsed" : false
+    },
+    "cell_type" : "code",
+    "source" : "df.printSchema()\n\ndf.select(\"name\").show()\n\ndf.select(df(\"name\"), df(\"age\") + 1).show()\n\ndf.filter(df(\"age\") > 21).show()\n\ndf.groupBy(\"age\").count().show()",
+    "outputs" : [ {
+      "name" : "stdout",
+      "output_type" : "stream",
+      "text" : "root\n |-- age: long (nullable = true)\n |-- name: string (nullable = true)\n\n+-------+\n|   name|\n+-------+\n|Michael|\n|   Andy|\n| Justin|\n+-------+\n\n+-------+---------+\n|   name|(age + 1)|\n+-------+---------+\n|Michael|     null|\n|   Andy|       31|\n| Justin|       20|\n+-------+---------+\n\n+---+----+\n|age|name|\n+---+----+\n| 30|Andy|\n+---+----+\n\n+----+-----+\n| age|count|\n+----+-----+\n|null|    1|\n|  19|    1|\n|  30|    1|\n+----+-----+\n\n"
+    }, {
+      "metadata" : { },
+      "data" : {
+        "text/html" : ""
+      },
+      "output_type" : "execute_result",
+      "execution_count" : 5
+    } ]
+  }, {
+    "metadata" : {
+      "trusted" : true,
+      "input_collapsed" : false,
+      "collapsed" : true
+    },
+    "cell_type" : "code",
+    "source" : "",
+    "outputs" : [ ]
+  } ],
+  "nbformat" : 4
+}

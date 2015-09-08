@@ -12,6 +12,7 @@ class FeederExtension(system: ExtendedActorSystem) extends Extension {
   val systemConfig = system.settings.config
 
   val file = systemConfig.getString("sparkAtScale.file")
+  val movie_ids_file = systemConfig.getString("sparkAtScale.movie_ids_file")
   val kafkaHost = systemConfig.getString("sparkAtScale.kafkaHost")
   val kafkaTopic = systemConfig.getString("sparkAtScale.kafkaTopic")
 

@@ -17,8 +17,8 @@ case class Rating(user_id: Int, movie_id: Int, rating: Float, batchtime:Long)
 
 object StreamingRatings {
   def main(args: Array[String]) {
+
     val conf = new SparkConf()
-      .set("spark.cassandra.connection.host", "127.0.0.1")
 
     val sc = SparkContext.getOrCreate(conf)
 
@@ -33,9 +33,16 @@ object StreamingRatings {
     val sqlContext = SQLContext.getOrCreate(sc)
     import sqlContext.implicits._
 
-    val brokers = "localhost:9092,localhost:9093"
+    if (args.length < 2) {
+      print("Supply the kafka broker as the first parameter and whether to display debug output as the second parameter (true|false) ")
+    }
+
+
+    val brokers = args(0)
     val topics = Set("ratings")
     val kafkaParams = Map[String, String]("metadata.broker.list" -> brokers)
+    println(s"connecting to brokers: $brokers")
+    val debugOutput = args(1).toBoolean
 
     val ratingsStream = KafkaUtils.createDirectStream[String, String, StringDecoder, StringDecoder](ssc, kafkaParams, topics)
 
@@ -51,7 +58,8 @@ object StreamingRatings {
         } ).toDF("user_id", "movie_id", "rating", "timestamp")
 
         // this can be used to debug dataframes
-        // df.show()
+        if (debugOutput)
+          df.show()
 
         // save the DataFrame to Cassandra
         // Note:  Cassandra has been initialized through spark-env.sh

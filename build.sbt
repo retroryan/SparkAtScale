@@ -20,6 +20,7 @@ val kafkaVersion = "0.8.2.1"
 val scalaTestVersion = "2.2.4"
 
 lazy val feederDeps = Seq(
+  "joda-time" % "joda-time" % "2.3",
   "com.typesafe.akka" %% "akka-actor" % akkaVersion,
   "com.typesafe.akka" %% "akka-testkit" % akkaVersion % "test",
   "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
