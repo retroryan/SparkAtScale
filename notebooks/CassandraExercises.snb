@@ -1,0 +1,327 @@
+{
+  "metadata" : {
+    "name" : "Cassandra Exercises - Load and Save Movie and Ratings Data",
+    "user_save_timestamp" : "1970-01-01T00:00:00.000Z",
+    "auto_save_timestamp" : "1970-01-01T00:00:00.000Z",
+    "language_info" : {
+      "name" : "scala",
+      "file_extension" : "scala",
+      "codemirror_mode" : "text/x-scala"
+    },
+    "trusted" : true,
+    "customLocalRepo" : "/home/automaton/.ivy2",
+    "customRepos" : null,
+    "customDeps" : [ "com.datastax.spark:spark-cassandra-connector_2.10:1.4.0-M3", "com.databricks:spark-csv_2.10:1.2.0", "- org.apache.spark % spark-core_2.10 % _", "- org.apache.hadoop % _ % _" ],
+    "customImports" : null,
+    "customSparkConf" : {
+      "spark.cassandra.connection.host" : "172.31.2.143",
+      "spark.master" : "spark://172.31.2.143:7077",
+      "spark.executor.cores" : "1",
+      "spark.executor.memory" : "512m",
+      "spark.cores.max" : "1",
+      "spark.eventLog.enabled" : "true",
+      "spark.eventLog.dir" : "logs/spark"
+    }
+  },
+  "cells" : [ {
+    "metadata" : { },
+    "cell_type" : "markdown",
+    "source" : "### Setup the SQL Context and necessary imports"
+  }, {
+    "metadata" : {
+      "trusted" : true,
+      "input_collapsed" : false,
+      "collapsed" : false
+    },
+    "cell_type" : "code",
+    "source" : "val sqlContext = new org.apache.spark.sql.SQLContext(sparkContext)\nimport sqlContext.implicits._\nimport org.apache.spark.sql.functions._",
+    "outputs" : [ {
+      "name" : "stdout",
+      "output_type" : "stream",
+      "text" : "sqlContext: org.apache.spark.sql.SQLContext = org.apache.spark.sql.SQLContext@46606b28\nimport sqlContext.implicits._\nimport org.apache.spark.sql.functions._\n"
+    }, {
+      "metadata" : { },
+      "data" : {
+        "text/html" : ""
+      },
+      "output_type" : "execute_result",
+      "execution_count" : 1
+    } ]
+  }, {
+    "metadata" : { },
+    "cell_type" : "markdown",
+    "source" : "## Exercise 1 - Load the movies from cvs and save to Cassandra\n### Load the Movies dataset as Data Frames"
+  }, {
+    "metadata" : {
+      "trusted" : true,
+      "input_collapsed" : false,
+      "collapsed" : false
+    },
+    "cell_type" : "code",
+    "source" : "import org.slf4j.impl.Log4jLoggerAdapter\n\nval moviesFromCSV = sqlContext.read.format(\"com.databricks.spark.csv\")\n                        .option(\"header\", \"true\")\n                        .load(\"file:/home/automaton/notebook_setup/ml-latest-small/movies.csv\")\n                        .toDF(\"movieid\", \"title\", \"genres\")",
+    "outputs" : [ {
+      "name" : "stdout",
+      "output_type" : "stream",
+      "text" : "import org.slf4j.impl.Log4jLoggerAdapter\nmoviesFromCSV: org.apache.spark.sql.DataFrame = [movieid: string, title: string, genres: string]\n"
+    }, {
+      "metadata" : { },
+      "data" : {
+        "text/html" : "<span style=\"color:red;\">Ooops, exception in the cell: </span>"
+      },
+      "output_type" : "execute_result",
+      "execution_count" : 2
+    } ]
+  }, {
+    "metadata" : {
+      "trusted" : true,
+      "input_collapsed" : false,
+      "collapsed" : false
+    },
+    "cell_type" : "code",
+    "source" : ":markdown\nThere are **${moviesFromCSV.count}** movies",
+    "outputs" : [ ]
+  }, {
+    "metadata" : { },
+    "cell_type" : "markdown",
+    "source" : "### Save the Data Frame to Cassandra\n\nFirst we create the necessary CQL schema in Cassandra specifying the keyspace and table."
+  }, {
+    "metadata" : {
+      "trusted" : true,
+      "input_collapsed" : false,
+      "collapsed" : false
+    },
+    "cell_type" : "code",
+    "source" : "import com.datastax.spark.connector.cql.CassandraConnector\n\nCassandraConnector(sparkContext.getConf).withSessionDo { session =>\n  session.execute(\"CREATE TABLE IF NOT EXISTS movie_db.movies (movieId int, title text, genres text, PRIMARY KEY(movieId));\")\n}",
+    "outputs" : [ ]
+  }, {
+    "metadata" : {
+      "trusted" : true,
+      "input_collapsed" : false,
+      "collapsed" : false
+    },
+    "cell_type" : "code",
+    "source" : "import org.apache.spark.sql.SaveMode\n\nmoviesFromCSV.write.format(\"org.apache.spark.sql.cassandra\")\n          .mode(SaveMode.Append)\n          .options(Map(\"keyspace\" -> \"movie_db\", \"table\" -> \"movies\"))\n          .save()",
+    "outputs" : [ ]
+  }, {
+    "metadata" : { },
+    "cell_type" : "markdown",
+    "source" : "Verify the data was inserted in Cassandra by running the following commands in the terminal\n \n* cqlsh\n* use movie_db;\n* desc movies;\n* select * from movies where movieid = 19;"
+  }, {
+    "metadata" : { },
+    "cell_type" : "markdown",
+    "source" : "## Exercise 2 - Load and join the movies and rating data \n\n### Load the ratings data from csv\n\nRename the column movieId so that it doesn't conflict after joining with movie data"
+  }, {
+    "metadata" : {
+      "trusted" : true,
+      "input_collapsed" : false,
+      "collapsed" : false
+    },
+    "cell_type" : "code",
+    "source" : "import org.apache.spark.sql.functions._\nval ratingDF = sqlContext.read.format(\"com.databricks.spark.csv\")\n                    .option(\"header\", \"true\")\n                    .load(\"file:/home/automaton/notebook_setup/ml-latest-small/ratings.csv\")\n                    .withColumnRenamed(\"movieId\",\"ratingMovieId\")",
+    "outputs" : [ ]
+  }, {
+    "metadata" : {
+      "trusted" : true,
+      "input_collapsed" : false,
+      "collapsed" : false
+    },
+    "cell_type" : "code",
+    "source" : ":markdown\nThere are **${ratingDF.count}** ratings",
+    "outputs" : [ ]
+  }, {
+    "metadata" : { },
+    "cell_type" : "markdown",
+    "source" : "### Load the movie data from Cassandra"
+  }, {
+    "metadata" : {
+      "trusted" : true,
+      "input_collapsed" : false,
+      "collapsed" : false
+    },
+    "cell_type" : "code",
+    "source" : "val moviesDF = sqlContext.read.format(\"org.apache.spark.sql.cassandra\")\n                    .options(Map( \"keyspace\" -> \"movie_db\", \"table\" -> \"movies\"))\n                    .load()",
+    "outputs" : [ ]
+  }, {
+    "metadata" : {
+      "trusted" : true,
+      "input_collapsed" : false,
+      "collapsed" : false
+    },
+    "cell_type" : "code",
+    "source" : ":markdown\nThere are **${moviesDF.count}** movies",
+    "outputs" : [ ]
+  }, {
+    "metadata" : { },
+    "cell_type" : "markdown",
+    "source" : "### Join the Movie Ratings with the Details of the Movie"
+  }, {
+    "metadata" : {
+      "trusted" : true,
+      "input_collapsed" : false,
+      "collapsed" : false
+    },
+    "cell_type" : "code",
+    "source" : "val joinedMovieRatingDF = moviesDF\n            .join(ratingDF, moviesDF(\"movieid\") === ratingDF(\"ratingMovieId\"))\n            .drop(\"ratingMovieId\")\n            .toDF(\"movieid\", \"genres\", \"title\", \"userid\", \"rating\", \"timestamp\")",
+    "outputs" : [ ]
+  }, {
+    "metadata" : { },
+    "cell_type" : "markdown",
+    "source" : "###Save the movies joined with ratings in Cassandra"
+  }, {
+    "metadata" : {
+      "trusted" : true,
+      "input_collapsed" : false,
+      "collapsed" : false
+    },
+    "cell_type" : "code",
+    "source" : "CassandraConnector(sparkContext.getConf).withSessionDo { session =>\n  session.execute(\"CREATE TABLE IF NOT EXISTS movie_db.movies_with_ratings (rating float, userid int, movieid int, genres text, title text, timestamp bigint, PRIMARY KEY(movieid, userid));\")\n}",
+    "outputs" : [ ]
+  }, {
+    "metadata" : {
+      "trusted" : true,
+      "input_collapsed" : false,
+      "collapsed" : false
+    },
+    "cell_type" : "code",
+    "source" : "import org.apache.spark.sql.SaveMode\n\njoinedMovieRatingDF.write.format(\"org.apache.spark.sql.cassandra\")\n          .mode(SaveMode.Append)\n          .options(Map(\"keyspace\" -> \"movie_db\", \"table\" -> \"movies_with_ratings\"))\n          .save()",
+    "outputs" : [ ]
+  }, {
+    "metadata" : { },
+    "cell_type" : "markdown",
+    "source" : "Verify the data was inserted in Cassandra by running the following commands in the terminal\n \n* cqlsh\n* use movie_db;\n* desc movies_with_ratings;\n* select * from movies_with_ratings where movieid = 19;"
+  }, {
+    "metadata" : { },
+    "cell_type" : "markdown",
+    "source" : "## Exercise 3 - Calculate the Average Ratings for each Movie and Save to Cassandra"
+  }, {
+    "metadata" : {
+      "trusted" : true,
+      "input_collapsed" : false,
+      "collapsed" : false
+    },
+    "cell_type" : "code",
+    "source" : "val movieRatingAvgMax = ratingDF.groupBy(ratingDF(\"ratingMovieId\"))\n                          .agg(avg($\"rating\"), max($\"rating\"))\n                          .toDF(\"ratingMovieId\", \"avg_rating\", \"max_rating\")",
+    "outputs" : [ ]
+  }, {
+    "metadata" : {
+      "trusted" : true,
+      "input_collapsed" : false,
+      "collapsed" : false
+    },
+    "cell_type" : "code",
+    "source" : "val joinedMovieAveragesDF = movieRatingAvgMax\n            .join(moviesDF, movieRatingAvgMax(\"ratingMovieId\") === moviesDF(\"movieid\"))\n            .drop(\"ratingMovieId\")",
+    "outputs" : [ ]
+  }, {
+    "metadata" : { },
+    "cell_type" : "markdown",
+    "source" : "### Save the Data Frame to Cassandra"
+  }, {
+    "metadata" : {
+      "trusted" : true,
+      "input_collapsed" : false,
+      "collapsed" : false
+    },
+    "cell_type" : "code",
+    "source" : "CassandraConnector(sparkContext.getConf).withSessionDo { session =>\n  session.execute(\"CREATE TABLE IF NOT EXISTS movie_db.movies_average_ratings (avg_rating float, max_rating float, movieId int, genres text, title text, PRIMARY KEY(movieId));\")\n}",
+    "outputs" : [ ]
+  }, {
+    "metadata" : {
+      "trusted" : true,
+      "input_collapsed" : false,
+      "collapsed" : false
+    },
+    "cell_type" : "code",
+    "source" : "joinedMovieAveragesDF.write.format(\"org.apache.spark.sql.cassandra\")\n          .mode(SaveMode.Append)\n          .options(Map(\"keyspace\" -> \"movie_db\", \"table\" -> \"movies_average_ratings\"))\n          .save()",
+    "outputs" : [ ]
+  }, {
+    "metadata" : { },
+    "cell_type" : "markdown",
+    "source" : "Verify the data was inserted in Cassandra by running the following commands in the terminal\n \n* cqlsh\n* use movie_db;\n* desc movies_average_ratings;\n* select * from movies_average_ratings where movieid = 19;"
+  }, {
+    "metadata" : { },
+    "cell_type" : "markdown",
+    "source" : "##Exercise 4 - Pushing Queries Down to Cassandra"
+  }, {
+    "metadata" : {
+      "trusted" : true,
+      "input_collapsed" : false,
+      "collapsed" : false
+    },
+    "cell_type" : "code",
+    "source" : "moviesDF.explain",
+    "outputs" : [ ]
+  }, {
+    "metadata" : {
+      "trusted" : true,
+      "input_collapsed" : false,
+      "collapsed" : false
+    },
+    "cell_type" : "code",
+    "source" : "val moviesDF3 = sqlContext.read.format(\"org.apache.spark.sql.cassandra\")\n                    .options(Map( \"keyspace\" -> \"movie_db\", \"table\" -> \"movies\"))\n                    .load()\n\nval filteredMovies = moviesDF3.filter(moviesDF3(\"movieid\") > 8000)",
+    "outputs" : [ ]
+  }, {
+    "metadata" : {
+      "trusted" : true,
+      "input_collapsed" : false,
+      "collapsed" : false
+    },
+    "cell_type" : "code",
+    "source" : "filteredMovies.explain",
+    "outputs" : [ ]
+  }, {
+    "metadata" : { },
+    "cell_type" : "markdown",
+    "source" : "## Exercise 5 - Saving Collections in Cassandra"
+  }, {
+    "metadata" : {
+      "trusted" : true,
+      "input_collapsed" : false,
+      "collapsed" : false
+    },
+    "cell_type" : "code",
+    "source" : "val movieRatingsCollectinsDF = joinedMovieRatingDF.rdd\n                                  .groupBy(row => row.getAs[Int](\"movieid\"))\n                                  .mapValues(_.map(_.getAs[String](\"rating\")).toList.map(_.toDouble))\n                                  .toDF(\"movieid\",\"ratings\")",
+    "outputs" : [ ]
+  }, {
+    "metadata" : {
+      "trusted" : true,
+      "input_collapsed" : false,
+      "collapsed" : false
+    },
+    "cell_type" : "code",
+    "source" : "movieRatingsCollectinsDF.take(20).toList.map(_.getAs[List[Double]](\"ratings\"))",
+    "outputs" : [ ]
+  }, {
+    "metadata" : {
+      "trusted" : true,
+      "input_collapsed" : false,
+      "collapsed" : false
+    },
+    "cell_type" : "code",
+    "source" : "CassandraConnector(sparkContext.getConf).withSessionDo { session =>\n  session.execute(\"CREATE TABLE IF NOT EXISTS movie_db.movies_list_ratings (movieId int, ratings list<double>, PRIMARY KEY(movieId));\")\n}",
+    "outputs" : [ ]
+  }, {
+    "metadata" : {
+      "trusted" : true,
+      "input_collapsed" : false,
+      "collapsed" : false
+    },
+    "cell_type" : "code",
+    "source" : "movieRatingsCollectinsDF.write.format(\"org.apache.spark.sql.cassandra\")\n          .mode(SaveMode.Append)\n          .options(Map(\"keyspace\" -> \"movie_db\", \"table\" -> \"movies_list_ratings\"))\n          .save()",
+    "outputs" : [ ]
+  }, {
+    "metadata" : { },
+    "cell_type" : "markdown",
+    "source" : "Verify the data was inserted in Cassandra by running the following commands in the terminal\n \n* cqlsh\n* use movie_db;\n* desc movies_list_ratings;\n* select * from movies_list_ratings where movieid = 19;"
+  }, {
+    "metadata" : {
+      "trusted" : true,
+      "input_collapsed" : true,
+      "output_stream_collapsed" : true,
+      "collapsed" : true
+    },
+    "cell_type" : "code",
+    "source" : ":markdown\nThere are\n* **${moviesDF.count}** movies before filtering and\n* **${filteredMovies.count}** movies after filtering",
+    "outputs" : [ ]
+  } ],
+  "nbformat" : 4
+}
