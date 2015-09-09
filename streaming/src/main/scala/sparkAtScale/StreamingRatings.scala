@@ -1,8 +1,7 @@
 package sparkAtScale
 
 import org.apache.spark.streaming.kafka.KafkaUtils
-import org.apache.spark.streaming.Seconds
-import org.apache.spark.streaming.StreamingContext
+import org.apache.spark.streaming.{Milliseconds, Seconds, StreamingContext, Time}
 import org.apache.spark.SparkContext
 import org.apache.spark.sql.SQLContext
 import org.apache.spark.SparkConf
@@ -10,7 +9,6 @@ import kafka.serializer.StringDecoder
 import org.apache.spark.sql.SaveMode
 import org.apache.spark.sql.Row
 import org.apache.spark.rdd.RDD
-import org.apache.spark.streaming.Time
 import org.joda.time.DateTime
 
 case class Rating(user_id: Int, movie_id: Int, rating: Float, batchtime:Long)
@@ -23,7 +21,7 @@ object StreamingRatings {
     val sc = SparkContext.getOrCreate(conf)
 
     def createStreamingContext(): StreamingContext = {
-      @transient val newSsc = new StreamingContext(sc, Seconds(2))
+      @transient val newSsc = new StreamingContext(sc, Milliseconds(500))
       println(s"Creating new StreamingContext $newSsc")
 
       newSsc
@@ -36,7 +34,6 @@ object StreamingRatings {
     if (args.length < 2) {
       print("Supply the kafka broker as the first parameter and whether to display debug output as the second parameter (true|false) ")
     }
-
 
     val brokers = args(0)
     val topics = Set("ratings")

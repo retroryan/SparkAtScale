@@ -29,7 +29,7 @@ bin/kafka-create-topic.sh --zookeeper localhost:2181 --replica 1 --partition 1 -
 bin/kafka-list-topic.sh --zookeeper localhost:2181
 
 #kafka 0.8.2
-bin/kafka-topics.sh --create --zookeeper localhost:2181 --replication-factor 1 --partitions 1 --topic ratings
+bin/kafka-topics.sh --create --zookeeper localhost:2181 --replication-factor 1 --partitions 5 --topic ratings
 bin/kafka-topics.sh --list --zookeeper localhost:2181
 
 bin/kafka-console-consumer.sh --zookeeper localhost:2181 --topic ratings --from-beginning
