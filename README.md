@@ -21,8 +21,12 @@ This demo simulates a stream of movie ratings.  Data flows from akka -> kafka ->
 * build the feeder fat jar   
 `sbt feeder/assembly`
 
-* run the feeder  
-`java -Xmx1g -jar feeder/target/scala-2.10/feeder-assembly-1.0.jar 2>&1 1>feeder-out.log &`
+* run the feeder
+
+Copy the application.conf file to dev.conf and modify the zookeeper location.  Then override the configs by using -Dconfig.file=dev.conf to use the new config.
+
+`java -Xmx5g -Dconfig.file=dev.conf -jar feeder/target/scala-2.10/feeder-assembly-1.0.jar 1 100 true 2>&1 1>feeder-out.log &`
+
 
 
 ## Run Spark Streaming
@@ -34,7 +38,7 @@ This demo simulates a stream of movie ratings.  Data flows from akka -> kafka ->
 `spark-submit --packages org.apache.spark:spark-streaming-kafka-assembly_2.10:1.4.1 --class sparkAtScale.StreamingRatings streaming/target/scala-2.10/streaming_2.10-1.0.jar`
  
  * running on a server in foreground
- dse spark-submit --packages org.apache.spark:spark-streaming-kafka-assembly_2.10:1.4.1 --class sparkAtScale.StreamingRatings streaming_2.10-1.0.jar
+ dse spark-submit --packages org.apache.spark:spark-streaming-kafka-assembly_2.10:1.4.1 --class sparkAtScale.StreamingRatings streaming_2.10-1.0.jar 172.31.18.33:9092 true
  
 * running on the server for production mode
 `nohup spark-submit --packages org.apache.spark:spark-streaming-kafka-assembly_2.10:1.4.1 --class sparkAtScale.StreamingRatings streaming/target/scala-2.10/streaming_2.10-1.0.jar 2>&1 1>streaming-out.log &`

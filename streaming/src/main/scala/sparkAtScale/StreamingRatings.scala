@@ -11,8 +11,9 @@ import org.apache.spark.sql.Row
 import org.apache.spark.rdd.RDD
 import org.joda.time.DateTime
 
-case class Rating(user_id: Int, movie_id: Int, rating: Float, batchtime:Long)
-
+/**
+ *   This uses the kafka receiver and not the Kafka Direct introduced in Spark 1.4
+ */
 object StreamingRatings {
   def main(args: Array[String]) {
 
@@ -59,8 +60,7 @@ object StreamingRatings {
           df.show()
 
         // save the DataFrame to Cassandra
-        // Note:  Cassandra has been initialized through spark-env.sh
-        //        Specifically, export SPARK_JAVA_OPTS=-Dspark.cassandra.connection.host=127.0.0.1
+        // Note:  Cassandra has been initialized through dse spark-submit, so we don't have to explicitly set the connection
         df.write.format("org.apache.spark.sql.cassandra")
           .mode(SaveMode.Append)
           .options(Map("keyspace" -> "movie_db", "table" -> "rating_by_movie"))

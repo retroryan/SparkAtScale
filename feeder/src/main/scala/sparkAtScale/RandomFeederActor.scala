@@ -41,6 +41,8 @@ class RandomFeederActor(tickInterval:FiniteDuration) extends Actor with ActorLog
   val randRating = Random
   val randRatingDecimal = Random
 
+  var ratingsSent = 0
+
   def receive = {
     case SendNextLine =>
 
@@ -49,7 +51,9 @@ class RandomFeederActor(tickInterval:FiniteDuration) extends Actor with ActorLog
       val nxtRandRating = randRating.nextInt(10) + randRatingDecimal.nextFloat()
 
       val nxtRating = Rating(nxtUser, nxtMovie, nxtRandRating, new DateTime().getMillis)
-      log.info(s"Sending next rating: $nxtRating")
+
+      ratingsSent += 1
+
 
       //rating data has the format user_id:movie_id:rating:timestamp
       //the key for the producer record is user_id + movie_id
@@ -58,6 +62,11 @@ class RandomFeederActor(tickInterval:FiniteDuration) extends Actor with ActorLog
       val future = feederExtension.producer.send(record, new Callback {
         override def onCompletion(result: RecordMetadata, exception: Exception) {
           if (exception != null) log.info("Failed to send record: " + exception)
+          else {
+            //periodically log the num of messages sent
+            if (ratingsSent % 20987 == 0)
+              log.info(s"ratingsSent = $ratingsSent  //  result partition: ${result.partition()}")
+          }
         }
       })
 
