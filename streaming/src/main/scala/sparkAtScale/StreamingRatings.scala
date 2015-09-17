@@ -42,6 +42,9 @@ object StreamingRatings {
     println(s"connecting to brokers: $brokers")
     val debugOutput = args(1).toBoolean
 
+
+    //TODO CONVERT TO THE OLD RECIEVER APPROACH TO TEST PERFORMANCE DIFFERENCE
+
     val ratingsStream = KafkaUtils.createDirectStream[String, String, StringDecoder, StringDecoder](ssc, kafkaParams, topics)
 
     ratingsStream.foreachRDD {
