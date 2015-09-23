@@ -16,38 +16,41 @@ import org.joda.time.DateTime
   */
 object StreamingDirectRatings {
 
-  val CHECKPOINT_PATH = "/ratingsCP"
-
   def main(args: Array[String]) {
 
     if (args.length < 3) {
       println("first paramteter is kafka broker ")
       println("second param whether to display debug output  (true|false) ")
       println("third param whether to enable check pointing (true|false) ")
+      println("checkpoint path ")
     }
 
     val brokers = args(0)
     val debugOutput = args(1).toBoolean
     val checkpointOn = args(2).toBoolean
+    val checkpoint_path = if (args.length == 4)
+      args(3).toString
+    else
+      ""
 
     val conf = new SparkConf()
 
     val sc = SparkContext.getOrCreate(conf)
 
     def createStreamingContext(): StreamingContext = {
-      @transient val newSsc = new StreamingContext(sc, Milliseconds(500))
+      @transient val newSsc = new StreamingContext(sc, Milliseconds(1000))
       println(s"Creating new StreamingContext $newSsc")
 
       if (checkpointOn) {
-        println(s"checkpoint set to: $CHECKPOINT_PATH")
-        newSsc.checkpoint(CHECKPOINT_PATH)
+        println(s"checkpoint set to: $checkpoint_path")
+        newSsc.checkpoint(checkpoint_path)
       }
 
       newSsc
     }
 
     val ssc = if (checkpointOn)
-      StreamingContext.getActiveOrCreate(CHECKPOINT_PATH, createStreamingContext)
+      StreamingContext.getActiveOrCreate(checkpoint_path, createStreamingContext)
     else
       StreamingContext.getActiveOrCreate(createStreamingContext)
 
@@ -57,6 +60,9 @@ object StreamingDirectRatings {
     val topics = Set("ratings")
     val kafkaParams = Map[String, String]("metadata.broker.list" -> brokers)
     println(s"connecting to brokers: $brokers")
+    println(s"ssc: $ssc")
+    println(s"kafkaParams: $kafkaParams")
+    println(s"topics: $topics")
 
     val ratingsStream = KafkaUtils.createDirectStream[String, String, StringDecoder, StringDecoder](ssc, kafkaParams, topics)
 

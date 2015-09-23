@@ -5,7 +5,7 @@ import org.apache.spark.{SparkConf, SparkContext}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{SQLContext, SaveMode}
 import org.apache.spark.streaming.kafka.KafkaUtils
-import org.apache.spark.streaming.{Milliseconds, StreamingContext, Time}
+import org.apache.spark.streaming.{Seconds, Milliseconds, StreamingContext, Time}
 import org.joda.time.DateTime
 
 /** This uses the Kafka Direct introduced in Spark 1.4
@@ -20,7 +20,7 @@ object StreamJoinDirectRatings {
     val sc = SparkContext.getOrCreate(conf)
 
     def createStreamingContext(): StreamingContext = {
-      @transient val newSsc = new StreamingContext(sc, Milliseconds(500))
+      @transient val newSsc = new StreamingContext(sc, Seconds(1))
       println(s"Creating new StreamingContext $newSsc")
 
       newSsc
@@ -38,6 +38,7 @@ object StreamJoinDirectRatings {
     val moviesDF = sqlContext.read.format("org.apache.spark.sql.cassandra")
       .options(Map("keyspace" -> "movie_db", "table" -> "movies"))
       .load()
+      .cache()
 
     moviesDF.filter(moviesDF("movie_id") === "51678").show()
 
