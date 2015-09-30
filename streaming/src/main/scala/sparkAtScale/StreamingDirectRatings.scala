@@ -1,14 +1,13 @@
 package sparkAtScale
 
-import org.apache.spark.streaming.kafka.KafkaUtils
-import org.apache.spark.streaming.{Milliseconds, Seconds, StreamingContext, Time}
-import org.apache.spark.SparkContext
-import org.apache.spark.sql.SQLContext
-import org.apache.spark.SparkConf
 import kafka.serializer.StringDecoder
-import org.apache.spark.sql.SaveMode
-import org.apache.spark.sql.Row
+import org.apache.hadoop.conf.Configuration
+import org.apache.spark.deploy.SparkHadoopUtil
+import org.apache.spark.{SparkConf, SparkContext}
 import org.apache.spark.rdd.RDD
+import org.apache.spark.sql.{SQLContext, SaveMode}
+import org.apache.spark.streaming.kafka.KafkaUtils
+import org.apache.spark.streaming.{Milliseconds, StreamingContext, Time}
 import org.joda.time.DateTime
 
 /** This uses the Kafka Direct introduced in Spark 1.4
@@ -21,38 +20,27 @@ object StreamingDirectRatings {
     if (args.length < 3) {
       println("first paramteter is kafka broker ")
       println("second param whether to display debug output  (true|false) ")
-      println("third param whether to enable check pointing (true|false) ")
-      println("checkpoint path ")
+      println("third param is the checkpoint path  ")
     }
 
     val brokers = args(0)
     val debugOutput = args(1).toBoolean
-    val checkpointOn = args(2).toBoolean
-    val checkpoint_path = if (args.length == 4)
-      args(3).toString
-    else
-      ""
+    val checkpoint_path = args(2).toString
 
     val conf = new SparkConf()
-
     val sc = SparkContext.getOrCreate(conf)
 
     def createStreamingContext(): StreamingContext = {
       @transient val newSsc = new StreamingContext(sc, Milliseconds(1000))
-      println(s"Creating new StreamingContext $newSsc")
-
-      if (checkpointOn) {
-        println(s"checkpoint set to: $checkpoint_path")
-        newSsc.checkpoint(checkpoint_path)
-      }
-
+      newSsc.checkpoint(checkpoint_path)
+      println(s"Creating new StreamingContext $newSsc with checkpoint path of: $checkpoint_path")
       newSsc
     }
 
-    val ssc = if (checkpointOn)
-      StreamingContext.getActiveOrCreate(checkpoint_path, createStreamingContext)
-    else
-      StreamingContext.getActiveOrCreate(createStreamingContext)
+    val hadoopConf: Configuration = SparkHadoopUtil.get.conf
+    hadoopConf.set("cassandra.username", "robot")
+    hadoopConf.set("cassandra.password", "silver")
+    val ssc = StreamingContext.getActiveOrCreate(checkpoint_path, createStreamingContext, hadoopConf)
 
     val sqlContext = SQLContext.getOrCreate(sc)
     import sqlContext.implicits._
@@ -75,7 +63,7 @@ object StreamingDirectRatings {
         }.map(rating => {
           val timestamp: Long = new DateTime(rating(3).trim.toLong).getMillis
           Rating(rating(0).trim.toInt, rating(1).trim.toInt, rating(2).trim.toFloat, timestamp)
-        } ).toDF("user_id", "movie_id", "rating", "timestamp")
+        }).toDF("user_id", "movie_id", "rating", "timestamp")
 
         // this can be used to debug dataframes
         if (debugOutput)
