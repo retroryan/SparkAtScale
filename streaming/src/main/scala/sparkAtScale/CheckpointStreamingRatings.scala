@@ -1,7 +1,5 @@
 package sparkAtScale
 
-import java.util.Arrays
-
 import kafka.serializer.StringDecoder
 import org.apache.hadoop.conf.Configuration
 import org.apache.spark.deploy.SparkHadoopUtil
@@ -15,37 +13,39 @@ import org.joda.time.DateTime
 /** This uses the Kafka Direct introduced in Spark 1.4
   *
   */
-object StreamingDirectRatings {
+object CheckpointStreamingRatings {
 
   def main(args: Array[String]) {
 
     if (args.length < 3) {
-      println("first parameter is kafka broker ")
-      println("second parameter is the kafka topic")
-      println("third param whether to display debug output  (true|false) ")
+      println("first paramteter is kafka broker ")
+      println("second param whether to display debug output  (true|false) ")
+      println("third param is the checkpoint path  ")
     }
 
     val brokers = args(0)
-    val topicsArg = args(1)
-    val debugOutput = args(2).toBoolean
+    val debugOutput = args(1).toBoolean
+    val checkpoint_path = args(2).toString
 
     val conf = new SparkConf()
     val sc = SparkContext.getOrCreate(conf)
 
     def createStreamingContext(): StreamingContext = {
       @transient val newSsc = new StreamingContext(sc, Milliseconds(1000))
-      println(s"Creating new StreamingContext $newSsc")
+      newSsc.checkpoint(checkpoint_path)
+      println(s"Creating new StreamingContext $newSsc with checkpoint path of: $checkpoint_path")
       newSsc
     }
 
-
-    val ssc = StreamingContext.getActiveOrCreate(createStreamingContext)
+    val hadoopConf: Configuration = SparkHadoopUtil.get.conf
+    hadoopConf.set("cassandra.username", "robot")
+    hadoopConf.set("cassandra.password", "silver")
+    val ssc = StreamingContext.getActiveOrCreate(checkpoint_path, createStreamingContext, hadoopConf)
 
     val sqlContext = SQLContext.getOrCreate(sc)
     import sqlContext.implicits._
 
-    val topics: Set[String]= topicsArg.split(",").map(_.trim).toSet
-
+    val topics = Set("ratings")
     val kafkaParams = Map[String, String]("metadata.broker.list" -> brokers)
     println(s"connecting to brokers: $brokers")
     println(s"ssc: $ssc")
@@ -62,11 +62,11 @@ object StreamingDirectRatings {
         // convert each RDD from the batch into a Ratings DataFrame
         //rating data has the format user_id:movie_id:rating:timestamp
         val df = message.map {
-          case (key, nxtRating) =>
-            val parsedRating = nxtRating.split("::")
-            val timestamp: Long = new DateTime(parsedRating(3).trim.toLong).getMillis
-            Rating(parsedRating(0).trim.toInt, parsedRating(1).trim.toInt, parsedRating(2).trim.toFloat, timestamp)
-        }.toDF()
+          case (key, nxtRating) => nxtRating.split("::")
+        }.map(rating => {
+          val timestamp: Long = new DateTime(rating(3).trim.toLong).getMillis
+          Rating(rating(0).trim.toInt, rating(1).trim.toInt, rating(2).trim.toFloat, timestamp)
+        }).toDF("user_id", "movie_id", "rating", "timestamp")
 
         // this can be used to debug dataframes
         if (debugOutput)
