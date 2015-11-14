@@ -1,6 +1,6 @@
 {
   "metadata" : {
-    "name" : "MovieAnalysis",
+    "name" : "CassandraMovieAnalysis",
     "user_save_timestamp" : "1970-01-01T00:00:00.000Z",
     "auto_save_timestamp" : "1970-01-01T00:00:00.000Z",
     "language_info" : {
@@ -9,17 +9,17 @@
       "codemirror_mode" : "text/x-scala"
     },
     "trusted" : true,
-    "customLocalRepo" : "/home/automaton/.ivy2",
+    "customLocalRepo" : "/home/data/.ivy2",
     "customRepos" : null,
     "customDeps" : [ "com.datastax.spark:spark-cassandra-connector_2.10:1.4.0-M3", "- org.apache.spark % spark-core_2.10 % _", "com.databricks:spark-csv_2.10:1.2.0", "- org.apache.hadoop % _ % _" ],
     "customImports" : null,
     "customArgs" : null,
     "customSparkConf" : {
-      "spark.cassandra.connection.host" : "172.31.21.172",
-      "spark.master" : "spark://172.31.21.172:7077",
-      "spark.executor.cores" : "2",
-      "spark.executor.memory" : "4G",
-      "spark.cores.max" : "5",
+      "spark.cassandra.connection.host" : "127.0.0.1",
+      "spark.master" : "spark://127.0.0.1:7077",
+      "spark.executor.cores" : "1",
+      "spark.executor.memory" : "1G",
+      "spark.cores.max" : "1",
       "spark.eventLog.enabled" : "true",
       "spark.eventLog.dir" : "logs/spark"
     }
@@ -39,7 +39,7 @@
     "outputs" : [ {
       "name" : "stdout",
       "output_type" : "stream",
-      "text" : "sqlContext: org.apache.spark.sql.SQLContext = org.apache.spark.sql.SQLContext@5305571c\nimport sqlContext.implicits._\nimport org.apache.spark.sql.functions._\nimport com.datastax.spark.connector.cql.CassandraConnector\n"
+      "text" : "sqlContext: org.apache.spark.sql.SQLContext = org.apache.spark.sql.SQLContext@7ebc340a\nimport sqlContext.implicits._\nimport org.apache.spark.sql.functions._\nimport com.datastax.spark.connector.cql.CassandraConnector\n"
     }, {
       "metadata" : { },
       "data" : {
@@ -56,128 +56,38 @@
     "metadata" : {
       "trusted" : true,
       "input_collapsed" : false,
-      "collapsed" : false
+      "collapsed" : true
     },
     "cell_type" : "code",
     "source" : "val moviesDF = sqlContext.read.format(\"org.apache.spark.sql.cassandra\")\n                    .options(Map( \"keyspace\" -> \"movie_db\", \"table\" -> \"movies\"))\n                    .load()",
-    "outputs" : [ {
-      "name" : "stdout",
-      "output_type" : "stream",
-      "text" : "moviesDF: org.apache.spark.sql.DataFrame = [movie_id: int, categories: array<string>, title: string]\n"
-    }, {
-      "metadata" : { },
-      "data" : {
-        "text/html" : "<div class=\"df-canvas\">\n      <script data-this=\"{&quot;dataId&quot;:&quot;anon00d090d12d64eae6e8ffe83e4080ca7e&quot;,&quot;partitionIndexId&quot;:&quot;anona4cd2cef3933fd4ca89dfe9913ebad0d&quot;,&quot;numPartitions&quot;:428,&quot;dfSchema&quot;:{&quot;type&quot;:&quot;struct&quot;,&quot;fields&quot;:[{&quot;name&quot;:&quot;movie_id&quot;,&quot;type&quot;:&quot;integer&quot;,&quot;nullable&quot;:true,&quot;metadata&quot;:{}},{&quot;name&quot;:&quot;categories&quot;,&quot;type&quot;:{&quot;type&quot;:&quot;array&quot;,&quot;elementType&quot;:&quot;string&quot;,&quot;containsNull&quot;:true},&quot;nullable&quot;:true,&quot;metadata&quot;:{}},{&quot;name&quot;:&quot;title&quot;,&quot;type&quot;:&quot;string&quot;,&quot;nullable&quot;:true,&quot;metadata&quot;:{}}]}}\" type=\"text/x-scoped-javascript\">/*<![CDATA[*/req(['../javascripts/notebook/dataframe','../javascripts/notebook/consoleDir'], \n      function(dataframe, extension) {\n        dataframe.call(data, this, extension);\n      }\n    );/*]]>*/</script>\n      <link rel=\"stylesheet\" href=\"/assets/stylesheets/ipython/css/dataframe.css\" type=\"text/css\"/>\n    </div>"
-      },
-      "output_type" : "execute_result",
-      "execution_count" : 2
-    } ]
+    "outputs" : [ ]
   }, {
     "metadata" : {
       "trusted" : true,
       "input_collapsed" : false,
-      "collapsed" : false
+      "collapsed" : true
     },
     "cell_type" : "code",
     "source" : ":markdown\nThere are **${moviesDF.count}** movies",
-    "outputs" : [ {
-      "name" : "stdout",
-      "output_type" : "stream",
-      "text" : "res2: String = There are **10680** movies\n"
-    }, {
-      "metadata" : { },
-      "data" : {
-        "text/markdown" : "There are **10680** movies"
-      },
-      "output_type" : "execute_result",
-      "execution_count" : 3
-    } ]
+    "outputs" : [ ]
   }, {
     "metadata" : {
       "trusted" : true,
       "input_collapsed" : false,
-      "collapsed" : false
+      "collapsed" : true
     },
     "cell_type" : "code",
     "source" : "moviesDF.printSchema()",
-    "outputs" : [ {
-      "name" : "stdout",
-      "output_type" : "stream",
-      "text" : "root\n |-- movie_id: integer (nullable = true)\n |-- categories: array (nullable = true)\n |    |-- element: string (containsNull = true)\n |-- title: string (nullable = true)\n\n"
-    }, {
-      "metadata" : { },
-      "data" : {
-        "text/html" : ""
-      },
-      "output_type" : "execute_result",
-      "execution_count" : 4
-    } ]
+    "outputs" : [ ]
   }, {
     "metadata" : {
       "trusted" : true,
       "input_collapsed" : false,
-      "collapsed" : false
-    },
-    "cell_type" : "code",
-    "source" : "\nmoviesDF.groupBy(\"categories\").toArray()\n\n",
-    "outputs" : [ {
-      "name" : "stdout",
-      "output_type" : "stream",
-      "text" : "<console>:60: error: value toArray is not a member of org.apache.spark.sql.GroupedData\n              moviesDF.groupBy(\"categories\").toArray()\n                                             ^\n"
-    } ]
-  }, {
-    "metadata" : {
-      "trusted" : true,
-      "input_collapsed" : false,
-      "collapsed" : false
-    },
-    "cell_type" : "code",
-    "source" : ":markdown\nThere are **${moviesDF.withColumn(categories)}** categories",
-    "outputs" : [ {
-      "name" : "stdout",
-      "output_type" : "stream",
-      "text" : "<console>:59: error: not enough arguments for method withColumn: (colName: String, col: org.apache.spark.sql.Column)org.apache.spark.sql.DataFrame.\nUnspecified value parameter col.\n        s\"\"\"There are **${moviesDF.withColumn(categories)}** categories\"\"\" \n                                             ^\n"
-    } ]
-  }, {
-    "metadata" : {
-      "trusted" : true,
-      "input_collapsed" : false,
-      "collapsed" : false
-    },
-    "cell_type" : "code",
-    "source" : "moviesDF.printSchema()",
-    "outputs" : [ {
-      "name" : "stdout",
-      "output_type" : "stream",
-      "text" : "root\n |-- movie_id: integer (nullable = true)\n |-- categories: array (nullable = true)\n |    |-- element: string (containsNull = true)\n |-- title: string (nullable = true)\n\n"
-    }, {
-      "metadata" : { },
-      "data" : {
-        "text/html" : ""
-      },
-      "output_type" : "execute_result",
-      "execution_count" : 7
-    } ]
-  }, {
-    "metadata" : {
-      "trusted" : true,
-      "input_collapsed" : false,
-      "collapsed" : false
+      "collapsed" : true
     },
     "cell_type" : "code",
     "source" : "moviesDF.queryExecution.logical",
-    "outputs" : [ {
-      "name" : "stdout",
-      "output_type" : "stream",
-      "text" : "res7: org.apache.spark.sql.catalyst.plans.logical.LogicalPlan = \nRelation[movie_id#0,categories#1,title#2] org.apache.spark.sql.cassandra.CassandraSourceRelation@80cdb79\n\n"
-    }, {
-      "metadata" : { },
-      "data" : {
-        "text/html" : "Relation[movie_id#0,categories#1,title#2] org.apache.spark.sql.cassandra.CassandraSourceRelation@80cdb79\n"
-      },
-      "output_type" : "execute_result",
-      "execution_count" : 8
-    } ]
+    "outputs" : [ ]
   }, {
     "metadata" : { },
     "cell_type" : "markdown",
@@ -186,68 +96,20 @@
     "metadata" : {
       "trusted" : true,
       "input_collapsed" : false,
-      "collapsed" : false
+      "collapsed" : true
     },
     "cell_type" : "code",
     "source" : "val ratingsDF = sqlContext.read.format(\"org.apache.spark.sql.cassandra\")\n                    .options(Map( \"keyspace\" -> \"movie_db\", \"table\" -> \"rating_by_movie\"))\n                    .load()\n                    .withColumnRenamed(\"movie_id\",\"rating_movie_id\")",
-    "outputs" : [ {
-      "name" : "stdout",
-      "output_type" : "stream",
-      "text" : "ratingsDF: org.apache.spark.sql.DataFrame = [rating_movie_id: int, user_id: int, rating: float, timestamp: int]\n"
-    }, {
-      "metadata" : { },
-      "data" : {
-        "text/html" : "<div class=\"df-canvas\">\n      <script data-this=\"{&quot;dataId&quot;:&quot;anon0467ce897cac69766c6f3fd6f34d58f1&quot;,&quot;partitionIndexId&quot;:&quot;anon2fb29ed912140ed5aa786cd00dece857&quot;,&quot;numPartitions&quot;:105116,&quot;dfSchema&quot;:{&quot;type&quot;:&quot;struct&quot;,&quot;fields&quot;:[{&quot;name&quot;:&quot;rating_movie_id&quot;,&quot;type&quot;:&quot;integer&quot;,&quot;nullable&quot;:true,&quot;metadata&quot;:{}},{&quot;name&quot;:&quot;user_id&quot;,&quot;type&quot;:&quot;integer&quot;,&quot;nullable&quot;:true,&quot;metadata&quot;:{}},{&quot;name&quot;:&quot;rating&quot;,&quot;type&quot;:&quot;float&quot;,&quot;nullable&quot;:true,&quot;metadata&quot;:{}},{&quot;name&quot;:&quot;timestamp&quot;,&quot;type&quot;:&quot;integer&quot;,&quot;nullable&quot;:true,&quot;metadata&quot;:{}}]}}\" type=\"text/x-scoped-javascript\">/*<![CDATA[*/req(['../javascripts/notebook/dataframe','../javascripts/notebook/consoleDir'], \n      function(dataframe, extension) {\n        dataframe.call(data, this, extension);\n      }\n    );/*]]>*/</script>\n      <link rel=\"stylesheet\" href=\"/assets/stylesheets/ipython/css/dataframe.css\" type=\"text/css\"/>\n    </div>"
-      },
-      "output_type" : "execute_result",
-      "execution_count" : 9
-    } ]
+    "outputs" : [ ]
   }, {
     "metadata" : {
       "trusted" : true,
       "input_collapsed" : false,
-      "collapsed" : false
-    },
-    "cell_type" : "code",
-    "source" : "",
-    "outputs" : [ {
-      "ename" : "Error",
-      "output_type" : "error",
-      "traceback" : [ "Incomplete (hint: check the parenthesis)" ]
-    } ]
-  }, {
-    "metadata" : {
-      "trusted" : true,
-      "input_collapsed" : false,
-      "collapsed" : false
-    },
-    "cell_type" : "code",
-    "source" : "",
-    "outputs" : [ {
-      "ename" : "Error",
-      "output_type" : "error",
-      "traceback" : [ "Incomplete (hint: check the parenthesis)" ]
-    } ]
-  }, {
-    "metadata" : {
-      "trusted" : true,
-      "input_collapsed" : false,
-      "collapsed" : false
+      "collapsed" : true
     },
     "cell_type" : "code",
     "source" : ":markdown\nThere are **${ratingsDF.count}** ratings",
-    "outputs" : [ {
-      "name" : "stdout",
-      "output_type" : "stream",
-      "text" : "res10: String = There are **2627882** ratings\n"
-    }, {
-      "metadata" : { },
-      "data" : {
-        "text/markdown" : "There are **2627882** ratings"
-      },
-      "output_type" : "execute_result",
-      "execution_count" : 12
-    } ]
+    "outputs" : [ ]
   }, {
     "metadata" : { },
     "cell_type" : "markdown",
@@ -256,22 +118,11 @@
     "metadata" : {
       "trusted" : true,
       "input_collapsed" : false,
-      "collapsed" : false
+      "collapsed" : true
     },
     "cell_type" : "code",
     "source" : "val joinedMovieRatingDF = moviesDF\n            .join(ratingsDF, moviesDF(\"movie_id\") === ratingsDF(\"rating_movie_id\"))\n            .drop(\"rating_movie_id\")\n            .toDF(\"movie_id\", \"categories\", \"title\", \"user_id\", \"rating\", \"timestamp\")",
-    "outputs" : [ {
-      "name" : "stdout",
-      "output_type" : "stream",
-      "text" : "joinedMovieRatingDF: org.apache.spark.sql.DataFrame = [movie_id: int, categories: array<string>, title: string, user_id: int, rating: float, timestamp: int]\n"
-    }, {
-      "metadata" : { },
-      "data" : {
-        "text/html" : "<div class=\"df-canvas\">\n      <script data-this=\"{&quot;dataId&quot;:&quot;anon9cacb8ebfb997bac2457d6489e144801&quot;,&quot;partitionIndexId&quot;:&quot;anonc81fb6e3cf69c6a6b4d8455126c6ec08&quot;,&quot;numPartitions&quot;:105116,&quot;dfSchema&quot;:{&quot;type&quot;:&quot;struct&quot;,&quot;fields&quot;:[{&quot;name&quot;:&quot;movie_id&quot;,&quot;type&quot;:&quot;integer&quot;,&quot;nullable&quot;:true,&quot;metadata&quot;:{}},{&quot;name&quot;:&quot;categories&quot;,&quot;type&quot;:{&quot;type&quot;:&quot;array&quot;,&quot;elementType&quot;:&quot;string&quot;,&quot;containsNull&quot;:true},&quot;nullable&quot;:true,&quot;metadata&quot;:{}},{&quot;name&quot;:&quot;title&quot;,&quot;type&quot;:&quot;string&quot;,&quot;nullable&quot;:true,&quot;metadata&quot;:{}},{&quot;name&quot;:&quot;user_id&quot;,&quot;type&quot;:&quot;integer&quot;,&quot;nullable&quot;:true,&quot;metadata&quot;:{}},{&quot;name&quot;:&quot;rating&quot;,&quot;type&quot;:&quot;float&quot;,&quot;nullable&quot;:true,&quot;metadata&quot;:{}},{&quot;name&quot;:&quot;timestamp&quot;,&quot;type&quot;:&quot;integer&quot;,&quot;nullable&quot;:true,&quot;metadata&quot;:{}}]}}\" type=\"text/x-scoped-javascript\">/*<![CDATA[*/req(['../javascripts/notebook/dataframe','../javascripts/notebook/consoleDir'], \n      function(dataframe, extension) {\n        dataframe.call(data, this, extension);\n      }\n    );/*]]>*/</script>\n      <link rel=\"stylesheet\" href=\"/assets/stylesheets/ipython/css/dataframe.css\" type=\"text/css\"/>\n    </div>"
-      },
-      "output_type" : "execute_result",
-      "execution_count" : 13
-    } ]
+    "outputs" : [ ]
   }, {
     "metadata" : { },
     "cell_type" : "markdown",
@@ -280,42 +131,20 @@
     "metadata" : {
       "trusted" : true,
       "input_collapsed" : false,
-      "collapsed" : false
+      "collapsed" : true
     },
     "cell_type" : "code",
     "source" : "CassandraConnector(sparkContext.getConf).withSessionDo { session =>\n  session.execute(\"CREATE TABLE IF NOT EXISTS movie_db.movies_with_ratings (rating float, user_id  int, movie_id int, categories text, title text, timestamp bigint, PRIMARY KEY(movie_id, user_id));\")\n}",
-    "outputs" : [ {
-      "name" : "stdout",
-      "output_type" : "stream",
-      "text" : "res11: com.datastax.driver.core.ResultSet = ResultSet[ exhausted: true, Columns[]]\n"
-    }, {
-      "metadata" : { },
-      "data" : {
-        "text/html" : "ResultSet[ exhausted: true, Columns[]]"
-      },
-      "output_type" : "execute_result",
-      "execution_count" : 14
-    } ]
+    "outputs" : [ ]
   }, {
     "metadata" : {
       "trusted" : true,
       "input_collapsed" : false,
-      "collapsed" : false
+      "collapsed" : true
     },
     "cell_type" : "code",
     "source" : "import org.apache.spark.sql.SaveMode\n\njoinedMovieRatingDF.write.format(\"org.apache.spark.sql.cassandra\")\n          .mode(SaveMode.Append)\n          .options(Map(\"keyspace\" -> \"movie_db\", \"table\" -> \"movies_with_ratings\"))\n          .save()",
-    "outputs" : [ {
-      "name" : "stdout",
-      "output_type" : "stream",
-      "text" : "import org.apache.spark.sql.SaveMode\n"
-    }, {
-      "metadata" : { },
-      "data" : {
-        "text/html" : ""
-      },
-      "output_type" : "execute_result",
-      "execution_count" : 15
-    } ]
+    "outputs" : [ ]
   }, {
     "metadata" : { },
     "cell_type" : "markdown",
@@ -324,22 +153,11 @@
     "metadata" : {
       "trusted" : true,
       "input_collapsed" : false,
-      "collapsed" : false
+      "collapsed" : true
     },
     "cell_type" : "code",
     "source" : "CassandraConnector(sparkContext.getConf).withSessionDo { session =>\n  session.execute(\"CREATE TABLE IF NOT EXISTS movie_db.ratings_by_user (rating float, user_id  int, movie_id int, timestamp bigint, PRIMARY KEY(user_id, movie_id));\")\n}",
-    "outputs" : [ {
-      "name" : "stdout",
-      "output_type" : "stream",
-      "text" : "res13: com.datastax.driver.core.ResultSet = ResultSet[ exhausted: true, Columns[]]\n"
-    }, {
-      "metadata" : { },
-      "data" : {
-        "text/html" : "ResultSet[ exhausted: true, Columns[]]"
-      },
-      "output_type" : "execute_result",
-      "execution_count" : 16
-    } ]
+    "outputs" : [ ]
   }, {
     "metadata" : {
       "trusted" : true,
