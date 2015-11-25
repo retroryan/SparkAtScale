@@ -15,8 +15,10 @@ create table movie_db.rating_by_movie (
 );
 
 create table movie_db.average_rating (
-    movie_id int primary key,
-    rating float
+    movie_id int,
+    average_rating float,
+    timestamp bigint,
+    primary key(movie_id, timestamp)
 );
 
 create table movie_db.movies_by_category (
