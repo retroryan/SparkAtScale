@@ -2,6 +2,10 @@
 
 This demo simulates a stream of movie ratings.  Data flows from akka -> kafka -> spark streaming -> cassandra
 
+# Setting up SBT
+
+http://www.scala-sbt.org/0.13/tutorial/Installing-sbt-on-Linux.html
+
 ## Kafka Setup
 
 [See the Kafka Setup Instructions in the KAFKA_SETUP.md file](KAFKA_SETUP.md)
