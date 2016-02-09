@@ -1,5 +1,6 @@
 package sparkAtScale
 
+import com.datastax.spark.connector.UDTValue
 import kafka.serializer.StringDecoder
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{SQLContext, SaveMode}
@@ -130,6 +131,8 @@ object StreamingDirectRatings {
         .options(Map("keyspace" -> "movie_db", "table" -> "average_rating"))
         .save()
     }
+
+    UDTValue
 
     ssc.start()
     ssc.awaitTermination()
