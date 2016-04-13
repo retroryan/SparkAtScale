@@ -1,6 +1,13 @@
 package datastaxWorkshop;
 
 import com.datastax.driver.core.*;
+import com.datastax.driver.mapping.Mapper;
+import com.datastax.driver.mapping.MappingManager;
+import common.ConnectionUtil;
+import common.Movies;
+import common.Rating;
+import driverDemo.DataPagingDemo;
+import driverDemo.MappingDemo;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
@@ -17,14 +24,28 @@ public class LoadData {
         String movieDataLocation = "";
         String hostname = "";
         if (args.length > 1) {
-            movieDataLocation = args[0];
-            System.out.println("movieDataLocation = " + movieDataLocation);
-            hostname = args[1];
-            System.out.println("hostname = " + hostname);
-            new LoadData().loadAndSaveMovieData(hostname, movieDataLocation);
+
+            String loadOrView = args[0];
+            if (loadOrView.equalsIgnoreCase("load")) {
+                movieDataLocation = args[1];
+                System.out.println("movieDataLocation = " + movieDataLocation);
+                hostname = args[2];
+                System.out.println("hostname = " + hostname);
+                new LoadData().loadAndSaveMovieData(hostname, movieDataLocation);
+            }
+            else  if (loadOrView.equalsIgnoreCase("view")){
+                hostname = args[1];
+                System.out.println("hostname = " + hostname);
+                new DataPagingDemo().viewMovieData(hostname);
+            }
+            else {
+                hostname = args[1];
+                System.out.println("hostname = " + hostname);
+                new MappingDemo().viewMovieData(hostname);
+            }
         }
         else {
-            System.out.println("Error!  Specify movie data location!");
+            System.out.println("Error!  Specify load or view along with movie data location for loading!");
         }
 
 
@@ -32,36 +53,28 @@ public class LoadData {
     }
 
     private void loadAndSaveMovieData(String hostname, String movieDataLocation) throws IOException {
-        try (Cluster clusterConn = connect(hostname)) {
+        try (Cluster clusterConn = ConnectionUtil.connect(hostname)) {
             try (Session session = clusterConn.newSession()) {
 
-                PreparedStatement statement = session.prepare(
-                        "INSERT INTO movie_db.movies " +
-                                "(movie_id, title, categories) " +
-                                "VALUES (?, ?, ?);");
+                MappingManager manager = new MappingManager(session);
+                Mapper<Movies> moviesMapper = manager.mapper(Movies.class);
+                //readMovieData(movieDataLocation, movieData -> saveMovieWithMapper(moviesMapper, movieData));
 
-                readMovieData(movieDataLocation, movieData -> saveMovieData(statement, session, movieData));
+                PreparedStatement insertRatingStatement = session.prepare(
+                        "INSERT INTO movie_db.rating_by_movie " +
+                                "(user_id, movie_id, rating, timestamp) " +
+                                "VALUES (?, ?, ?, ?);");
+
+                readRatingData(movieDataLocation, ratingData -> saveRatingData(insertRatingStatement, session, ratingData));
+
             }
         }
     }
 
-    public Cluster connect(String node) {
-        Cluster cluster = Cluster.builder()
-                .addContactPoint(node)
-                .build();
-        Metadata metadata = cluster.getMetadata();
-        System.out.printf("Connected to cluster: %s\n",
-                metadata.getClusterName());
-        for (Host host : metadata.getAllHosts()) {
-            System.out.printf("Datacenter: %s; Host: %s; Rack: %s\n",
-                    host.getDatacenter(), host.getAddress(), host.getRack());
-        }
-        return cluster;
-    }
 
-    private void readMovieData(String filePath, Consumer<MovieData> movieDataConsumer) throws IOException {
+    private void readMovieData(String filePath, Consumer<Movies> movieDataConsumer) throws IOException {
 
-        FileReader fileReader = new FileReader(filePath);
+        FileReader fileReader = new FileReader(filePath + "/movies.dat");
         BufferedReader reader = new BufferedReader(
                 fileReader);
 
@@ -74,7 +87,7 @@ public class LoadData {
 
     }
 
-    private void processMovieDataLine(Consumer<MovieData> movieDataConsumer, String line) {
+    private void processMovieDataLine(Consumer<Movies> movieDataConsumer, String line) {
         if (line != null && line.length() > 0) {
             String[] split = line.split("::");
             if (split.length == 3) {
@@ -85,18 +98,52 @@ public class LoadData {
                 if (categoryArray.length > 0)
                     categories = new HashSet<>(Arrays.asList(categoryArray));
 
-                MovieData movieData = new MovieData(id, title, categories);
-                movieDataConsumer.accept(movieData);
+                Movies movies = new Movies(id, title, categories);
+                movieDataConsumer.accept(movies);
             }
         }
     }
 
-    private void saveMovieData(PreparedStatement statement, Session session, MovieData movieData) {
-        BoundStatement boundStatement = new BoundStatement(statement);
+    private void saveMovieWithMapper(Mapper<Movies> moviesMapper, Movies movie) {
+        moviesMapper.save(movie);
+    }
+
+    private void readRatingData(String filePath, Consumer<Rating> ratingDataConsumer) throws IOException {
+        FileReader fileReader = new FileReader(filePath + "/ratings.dat");
+        BufferedReader reader = new BufferedReader(
+                fileReader);
+
+        String line = reader.readLine();
+        while (line != null) {
+            //save to Cassandra here
+            line = reader.readLine();
+            processRatingDataLine(ratingDataConsumer, line);
+        }
+
+    }
+
+    private void processRatingDataLine(Consumer<Rating> ratingDataConsumer, String line) {
+        if (line != null && line.length() > 0) {
+            String[] split = line.split("::");
+            if (split.length == 4) {
+                int user_id = Integer.parseInt(split[0]);
+                int movie_id = Integer.parseInt(split[1]);
+                float raw_rating = Float.parseFloat(split[2]);
+                int timestamp = Integer.parseInt(split[3]);
+
+                Rating rating = new Rating(movie_id, user_id, raw_rating, timestamp);
+                ratingDataConsumer.accept(rating);
+            }
+        }
+    }
+
+    private void saveRatingData(PreparedStatement insertRatingStatement, Session session, Rating rating) {
+        BoundStatement boundStatement = new BoundStatement(insertRatingStatement);
         session.execute(boundStatement.bind(
-                movieData.getMovie_id(),
-                movieData.getTitle(),
-                movieData.getCategories()));
+               rating.getUser_id(),
+                rating.getMovie_id(),
+                rating.getRating(),
+                rating.getTimestamp()));
     }
 
 }

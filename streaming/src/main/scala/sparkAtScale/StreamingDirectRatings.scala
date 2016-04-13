@@ -1,14 +1,18 @@
 package sparkAtScale
 
-import com.datastax.spark.connector.UDTValue
+//import com.datastax.bdp.spark.DseSparkConfHelper
+
+import com.datastax.spark.connector.SomeColumns
 import kafka.serializer.StringDecoder
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{SQLContext, SaveMode}
+import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.streaming.kafka.KafkaUtils
-import org.apache.spark.streaming.{Milliseconds, Seconds, StreamingContext, Time}
+import org.apache.spark.streaming.{Seconds, StreamingContext, Time}
 import org.apache.spark.{SparkConf, SparkContext}
 import org.joda.time.DateTime
 
+import scala.collection.mutable.ArrayBuffer
 
 
 /** This uses the Kafka Direct introduced in Spark 1.4
@@ -22,32 +26,33 @@ object StreamingDirectRatings {
 
   def main(args: Array[String]) {
 
-    if (args.length < 4) {
+    if (args.length < 3) {
       println("first parameter is kafka broker ")
       println("second parameter is the kafka topic")
       println("third param whether to display debug output  (true|false) ")
-      println("forth param is the checkpoint path  ")
-
     }
 
     val brokers = args(0)
     val topicsArg = args(1)
     val debugOutput = args(2).toBoolean
-    val checkpoint_path = args(3).toString
 
-    val conf = new SparkConf()
-    val sc = SparkContext.getOrCreate(conf)
+    //val sparkConf: SparkConf = DseSparkConfHelper.enrichSparkConf(new SparkConf().setAppName("SimpleSpark"))
+
+    val sparkConf = new SparkConf()
+    val contextDebugStr: String = sparkConf.toDebugString
+    System.out.println("contextDebugStr = " + contextDebugStr)
+
 
     def createStreamingContext(): StreamingContext = {
-      @transient val newSsc = new StreamingContext(sc, Milliseconds(1000))
-      newSsc.checkpoint(checkpoint_path)
-      println(s"Creating new StreamingContext $newSsc with checkpoint path of: $checkpoint_path")
+      @transient val newSsc = new StreamingContext(sparkConf, Seconds(1))
+      println(s"Creating new StreamingContext $newSsc")
+
       newSsc
     }
 
+    val ssc = StreamingContext.getActiveOrCreate(createStreamingContext)
 
-    val ssc = StreamingContext.getActiveOrCreate(checkpoint_path, createStreamingContext)
-
+    val sc = SparkContext.getOrCreate(sparkConf)
     val sqlContext = SQLContext.getOrCreate(sc)
     import sqlContext.implicits._
 
@@ -67,12 +72,22 @@ object StreamingDirectRatings {
       Rating(parsedRating(0).trim.toInt, parsedRating(1).trim.toInt, parsedRating(2).trim.toFloat, timestamp)
     }
 
+
+    //
+
     ratingsStream.foreachRDD {
       (message: RDD[Rating], batchTime: Time) => {
 
         // convert each RDD from the batch into a Ratings DataFrame
         //rating data has the format user_id:movie_id:rating:timestamp
         val ratingDF = message.toDF()
+
+        val schema =  ratingDF.schema
+        case class df_to_map(id: Int, map: Map[String,String])
+        val mydf = df_to_map(2,Map("a"->"b", "c"->"d"))
+        val collection = sc.parallelize(Seq(mydf))
+
+        //collection.saveToCassandra("test", "words", SomeColumns("word", "count"))
 
         // this can be used to debug dataframes
         if (debugOutput)
@@ -87,7 +102,15 @@ object StreamingDirectRatings {
       }
     }
 
+    //calcAverageRatings(ratingsStream, sqlContext)
 
+    ssc.start()
+    ssc.awaitTermination()
+  }
+
+  def calcAverageRatings(ratingsStream: DStream[Rating], sqlContext:SQLContext): Unit = {
+
+    import sqlContext.implicits._
 
     val createRatingCombiner = (rating: Float) => (1, rating)
 
@@ -102,12 +125,12 @@ object StreamingDirectRatings {
       (numScores1 + numScores2, totalScore1 + totalScore2)
     }
 
-    val averagingFunction = (movieRatings: MovieRatings, time:Long) => {
+    val averagingFunction = (movieRatings: MovieRatings, time: Long) => {
       val (movieID, (numberScores, totalScore)) = movieRatings
       AverageRating(movieID, totalScore / numberScores, time)
     }
 
-    val data = new collection.mutable.ArrayBuffer[(Long, Double)]()
+    val data = new ArrayBuffer[(Long, Double)]()
     val w = ratingsStream.window(Seconds(60), Seconds(5)).foreachRDD { (ratingRDD, time) =>
 
       println(s"count: ${ratingRDD.count()}")
@@ -117,8 +140,8 @@ object StreamingDirectRatings {
 
       //val averagingFunctionWithTime:AverageRating = (_:MovieRatings, time.milliseconds)
 
-      val averageRatings = combinedRatings.map{
-        nxtRating:MovieRatings => averagingFunction(nxtRating, time.milliseconds)
+      val averageRatings = combinedRatings.map {
+        nxtRating: MovieRatings => averagingFunction(nxtRating, time.milliseconds)
       }.toDF()
 
       println(s"Averaged Ratings count: ${averageRatings.count()}")
@@ -131,10 +154,5 @@ object StreamingDirectRatings {
         .options(Map("keyspace" -> "movie_db", "table" -> "average_rating"))
         .save()
     }
-
-    UDTValue
-
-    ssc.start()
-    ssc.awaitTermination()
   }
 }

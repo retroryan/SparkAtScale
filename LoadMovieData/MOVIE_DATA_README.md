@@ -7,7 +7,7 @@
 `mvn package`
 
 * Run the java program to import the data
-`java -jar target/LoadMovieData-0.1-jar-with-dependencies.jar ../data/movies.dat localhost`
+`java -jar target/LoadMovieData-0.1-jar-with-dependencies.jar load ../data/movies.dat localhost`
 
 * Use cqlsh to verify the data was loaded
 

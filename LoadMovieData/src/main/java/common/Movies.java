@@ -1,14 +1,28 @@
-package datastaxWorkshop;
+package common;
+
+import com.datastax.driver.mapping.annotations.Column;
+import com.datastax.driver.mapping.annotations.PartitionKey;
+import com.datastax.driver.mapping.annotations.Table;
 
 import java.util.Set;
 
-public class MovieData {
+@Table(keyspace = "movie_db", name = "movies",
+        readConsistency = "QUORUM",
+        writeConsistency = "QUORUM",
+        caseSensitiveKeyspace = false,
+        caseSensitiveTable = false)
+public class Movies {
 
+    @PartitionKey
+    @Column(name = "movie_id")
     int movie_id;
     String title;
     Set<String> categories;
 
-    public MovieData(int movie_id, String title, Set<String> categories) {
+    public Movies() {
+    }
+
+    public Movies(int movie_id, String title, Set<String> categories) {
         this.movie_id = movie_id;
         this.title = title;
         this.categories = categories;
