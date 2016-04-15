@@ -1,4 +1,4 @@
-CREATE KEYSPACE IF NOT EXISTS movie_db WITH replication = {'class':'SimpleStrategy', 'replication_factor':1};
+CREATE KEYSPACE IF NOT EXISTS movie_db WITH replication = {'class':'NetworkTopologyStrategy', 'DC1':3};
 
 create table movie_db.movies (
     movie_id int primary key,

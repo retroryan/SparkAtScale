@@ -38,13 +38,23 @@ Copy the application.conf file to dev.conf and modify the zookeeper location.  T
 * build the streaming jar
 `sbt streaming/package`
 
-* running locally for development
-  first parameter is kafka broker and the second parameter whether to display debug output  (true|false)
-
-`dse spark-submit --packages org.apache.spark:spark-streaming-kafka-assembly_2.10:1.4.1 --class sparkAtScale.StreamingRatings streaming/target/scala-2.10/streaming_2.10-1.0.jar 172.31.18.33:9092 true`
+* copy the jar from target to server -  i.e. the jar at streaming/target/scala-2.10/streaming_2.10-0.1.jar
 
  * running on a server in foreground
- dse spark-submit --packages org.apache.spark:spark-streaming-kafka-assembly_2.10:1.4.1 --class sparkAtScale.StreamingRatings streaming_2.10-1.0.jar localhost:9092 true
+ 
+first parameter is kafka broker and the second parameter whether to display debug output  (true|false)
+
+`dse spark-submit --packages org.apache.spark:spark-streaming-kafka_2.10:1.4.1 --class sparkAtScale.StreamingDirectRatings streaming_2.10-0.1.jar 10.0.0.4:9092 ratings true`
 
 * running on the server for production mode
-`nohup dse spark-submit --packages org.apache.spark:spark-streaming-kafka-assembly_2.10:1.4.1 --class sparkAtScale.StreamingRatings streaming/target/scala-2.10/streaming_2.10-1.0.jar 2>&1 1>streaming-out.log &`
+
+`nohup dse spark-submit --conf spark.driver.host=10.0.0.4 --packages org.apache.spark:spark-streaming-kafka_2.10:1.4.1 --class sparkAtScale.StreamingDirectRatings streaming_2.10-0.1.jar  10.0.0.4:9092 ratings true 2>&1 1>streaming-out.log &`
+
+* if you see an error with spark host failed to connet try setting:
+
+`--conf spark.driver.host=10.0.0.4`
+
+
+## Spark Notebook
+
+`screen -m -d -S "snb" bash -c 'bin/spark-notebook -Dhttp.port=9042 >> notebook.out'`
