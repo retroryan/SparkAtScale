@@ -50,7 +50,7 @@ object StreamingDirectRatings {
       newSsc
     }
 
-    val ssc = StreamingContext.getActiveOrCreate(createStreamingContext)
+    val sparkStreamingContext = StreamingContext.getActiveOrCreate(createStreamingContext)
 
     val sc = SparkContext.getOrCreate(sparkConf)
     val sqlContext = SQLContext.getOrCreate(sc)
@@ -60,11 +60,11 @@ object StreamingDirectRatings {
 
     val kafkaParams = Map[String, String]("metadata.broker.list" -> brokers)
     println(s"connecting to brokers: $brokers")
-    println(s"ssc: $ssc")
+    println(s"sparkStreamingContext: $sparkStreamingContext")
     println(s"kafkaParams: $kafkaParams")
     println(s"topics: $topics")
 
-    val rawRatingsStream = KafkaUtils.createDirectStream[String, String, StringDecoder, StringDecoder](ssc, kafkaParams, topics)
+    val rawRatingsStream = KafkaUtils.createDirectStream[String, String, StringDecoder, StringDecoder](sparkStreamingContext, kafkaParams, topics)
 
     val ratingsStream = rawRatingsStream.map { case (key, nxtRating) =>
       val parsedRating = nxtRating.split("::")
@@ -82,13 +82,6 @@ object StreamingDirectRatings {
         //rating data has the format user_id:movie_id:rating:timestamp
         val ratingDF = message.toDF()
 
-        val schema =  ratingDF.schema
-        case class df_to_map(id: Int, map: Map[String,String])
-        val mydf = df_to_map(2,Map("a"->"b", "c"->"d"))
-        val collection = sc.parallelize(Seq(mydf))
-
-        //collection.saveToCassandra("test", "words", SomeColumns("word", "count"))
-
         // this can be used to debug dataframes
         if (debugOutput)
           ratingDF.show()
@@ -104,8 +97,8 @@ object StreamingDirectRatings {
 
     //calcAverageRatings(ratingsStream, sqlContext)
 
-    ssc.start()
-    ssc.awaitTermination()
+    sparkStreamingContext.start()
+    sparkStreamingContext.awaitTermination()
   }
 
   def calcAverageRatings(ratingsStream: DStream[Rating], sqlContext:SQLContext): Unit = {
