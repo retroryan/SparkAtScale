@@ -41,9 +41,6 @@ log.cleaner.enable=true
 #On your local machine / laptop run jconsole to monitor kafka.  Enter the IP and Port from above
 jconsole &
 
-#kafka 0.8
-bin/kafka-create-topic.sh --zookeeper localhost:2181 --replica 1 --partition 1 --topic ratings
-bin/kafka-list-topic.sh --zookeeper localhost:2181
 
 #kafka 0.8.2
 bin/kafka-topics.sh --create --zookeeper localhost:2181 --replication-factor 1 --partitions 5 --topic ratings
