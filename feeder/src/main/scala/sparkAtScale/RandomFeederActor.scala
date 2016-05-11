@@ -43,7 +43,7 @@ class RandomFeederActor(tickInterval:FiniteDuration) extends Actor with ActorLog
 
   var ratingsSent = 0
 
-  def receive = {
+  def receive:Receive = {
     case SendNextLine =>
 
       val nxtMovie = movieIds(randMovies.nextInt(idLength))
