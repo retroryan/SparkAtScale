@@ -44,7 +44,9 @@ jconsole &
 
 #kafka 0.8.2
 bin/kafka-topics.sh --create --zookeeper localhost:2181 --replication-factor 1 --partitions 5 --topic ratings
+
 bin/kafka-topics.sh --list --zookeeper localhost:2181
+
 bin/kafka-topics.sh --describe --topic ratings --zookeeper localhost:2181
 
 bin/kafka-console-consumer.sh --zookeeper localhost:2181 --topic ratings --from-beginning
