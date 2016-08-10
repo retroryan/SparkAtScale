@@ -49,6 +49,13 @@ bin/kafka-topics.sh --list --zookeeper localhost:2181
 
 bin/kafka-topics.sh --describe --topic ratings --zookeeper localhost:2181
 
+
+bin/kafka-topics.sh --create --zookeeper 192.168.99.100:2181 --replication-factor 1 --partitions 5 --topic test
+
+bin/kafka-topics.sh --list --zookeeper localhost:2181
+
+bin/kafka-topics.sh --describe --topic ratings --zookeeper localhost:2181
+
 bin/kafka-console-consumer.sh --zookeeper localhost:2181 --topic ratings --from-beginning
 
 

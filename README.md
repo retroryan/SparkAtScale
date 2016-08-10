@@ -44,11 +44,11 @@ Copy the application.conf file to dev.conf and modify the zookeeper location.  T
  
 first parameter is kafka broker and the second parameter whether to display debug output  (true|false)
 
-`dse spark-submit --packages org.apache.spark:spark-streaming-kafka_2.10:1.4.1 --class sparkAtScale.StreamingDirectRatings streaming_2.10-0.1.jar 10.0.0.4:9092 ratings true`
+`dse spark-submit --packages org.apache.spark:spark-streaming-kafka_2.10:1.6.1 --class sparkAtScale.StreamingDirectRatings streaming_2.10-0.1.jar 10.0.0.4:9092 ratings true`
 
 * running on the server for production mode
 
-`nohup dse spark-submit --conf spark.driver.host=10.0.0.4 --packages org.apache.spark:spark-streaming-kafka_2.10:1.4.1 --class sparkAtScale.StreamingDirectRatings streaming_2.10-0.1.jar  10.0.0.4:9092 ratings true 2>&1 1>streaming-out.log &`
+`nohup dse spark-submit --conf spark.driver.host=10.0.0.4 --packages org.apache.spark:spark-streaming-kafka_2.10:1.6.1 --class sparkAtScale.StreamingDirectRatings streaming_2.10-0.1.jar  10.0.0.4:9092 ratings true 2>&1 1>streaming-out.log &`
 
 * if you see an error with spark host failed to connet try setting:
 

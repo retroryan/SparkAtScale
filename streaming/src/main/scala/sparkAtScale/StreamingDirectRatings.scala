@@ -2,7 +2,6 @@ package sparkAtScale
 
 //import com.datastax.bdp.spark.DseSparkConfHelper
 
-import com.datastax.spark.connector.SomeColumns
 import kafka.serializer.StringDecoder
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{SQLContext, SaveMode}
