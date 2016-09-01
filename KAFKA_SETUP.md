@@ -34,8 +34,13 @@ export JMX_PORT=5050
 For load testing kafka can quickly run out of disk space.  Modify the server config to delete messages in config/server.properties
 
 log.retention.minutes=30
+
 log.cleanup.policy=delete
+
 log.cleaner.enable=true
+
+Also the log can be stored on a separate disk if needed:
+log.dirs=/media/Kafka-Drive/kafka-log
 
 
 #On your local machine / laptop run jconsole to monitor kafka.  Enter the IP and Port from above
